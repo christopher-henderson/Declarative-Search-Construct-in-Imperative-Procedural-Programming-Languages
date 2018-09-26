@@ -55,29 +55,73 @@ Declarative Programming
 
 
 \section{Introduction}
+This paper will attempt to bring a component often associated with declarative programming, automated graph search as a first class citizen, into an imperative/procedural context. We will explore the \code{search} construct which, at least aesthetically, appears much like the traditional \code{switch} statement found in many popular programming language.
+
+\begin{figure}
+\begin{lstlisting}[language=golang, style=boxed]
+search root {
+	children:
+		...
+	reject:
+		...
+	accept:
+		...
+}
+\end{lstlisting}
+\end{figure}
+
+\section{Background}
 
 \section{Methodology}
 
-\section{The \code{search} statement}
+\section{Related Work}
+Prolog's proof search.
+
+
+% /////////
+
+\section{Our Approach}
+Build a compiler based off of THE most C like modern language
+
+\subsection{The \code{search} statement}
 
 \subsection{\code{search} signature}
 
 \subsection{\code{children}}
-Given a procedure that accepts a node and returns a list of nodes, a graph may be traversed in an arbitrary fashion.
+Given a procedure which accepts a node and returns a list of nodes, a graph may be traversed in any arbitrary fashion. The \code{children} procedure consults the graph search on how to procede forward from any given node from within the graph. The order in which the user provided procedure produces its children guides the underlying engine on how to traverse the graph, although current implementations mandate the use of a depth-firs search (DFS) strategy from within the engine. The choice of a DFS implementation is irrespective as future implementations can just as opaquely provide dispatch to alternative search strategies. The \code{children} block is defined as follows:
 \\
-Optionally, the \code{children} procedure may be provided with a list of nodes representing the solution computed thus far. This is to facilitate algorithms who make their decisions via heuristics.
+\\
+\textit{The \code{children} procedure accepts a node and returns a list of nodes. Optionally, the \code{children} procedure may additionally be provided with a list of nodes representing the solution computed thus far, thus facilitating algorithms which make their decisions via heuristics.}
+
+\begin{lstlisting}
+children(parent Node[, solution [Node]]) -> [Node]
+\end{lstlisting}
 
 \subsection{\code{reject}}
+Given a procedure which accepts a node which is a \textit{candidate} member of a solution and a list of nodes representing the solution computed thus far, and returns a boolean value indicating whether or not that candidate node represents a dead-end in the somputation, a graph search can be conducted in a \textit{fail fast} fashion.
+
+The \code{reject} procedure @TODO
+
+\begin{lstlisting}
+reject(candidate Node, solution [Node]) -> bool
+\end{lstlisting}
 
 \subsection{\code{accept}}
 Given a list of nodes that represents the computed solution thus far the \code{accept} procedure returns a boolean value indicating whether or not the solution in question is a whole, complete, and correct solution to the current problem.
 
-\section{Psuedo Code Implementation}
+\begin{figure}
+\centering
+\begin{lstlisting}
+accept(solution [Node]) -> bool
+\end{lstlisting}
+\end{figure}
 
-\section{EBNF Grammar}
+\subsection{Psuedo Code Implementation}
+
+\subsection{EBNF Grammar}
 This section provides the extended Backus-Naur form (EBNF) of the \code{search} construct. These grammars are only meaningful within the context of an extant grammar, the definition of which is outside the scope of this paper. As such, common definitions such as \code{statement-list} and \code{expr} have been elided and are to be taken as their common meanings.
 
-\subsection{Idealic Grammar}
+\subsubsection{Idealic Grammar}
 The following is the extended Backus-Naur form of the idealic candidate search construct.
 \begin{grammar}
 <search> ::= `search' <expr> [; <natural-number-expr>] `{' <search-block> `}'
@@ -85,7 +129,7 @@ The following is the extended Backus-Naur form of the idealic candidate search c
 <search-block> ::= `children' `:' <statement-list> [`accept' `:' <statement-list>][`reject' `:' <statement-list>]
 \end{grammar}
 
-\subsection{Implemented Grammar}
+\subsubsection{Implemented Grammar}
 The following is the extended Backus-Naur form of the \code{search} construct as implemented in the Go programming language. It's defining difference is the admittance of a need to inform the compiler of the type of the initializing \code{expr} in the \code{search} signature.
 
 \begin{grammar}
@@ -96,13 +140,26 @@ The following is the extended Backus-Naur form of the \code{search} construct as
 
 The \code{search} construct is itself a statement and, as such, may be recursively nested within itself.
 
-\section{Implementations}
+\subsection{Implementations}
 
-\subsection{The Go Programming Language}
+\subsubsection{The Go Programming Language}
 
 \subsubsection{Code Samples}
 
-\subsection{The Rust Programming Language}
+\subsubsection{The Rust Programming Language}
+
+
+
+% /////////
+\section{Results}
+It works, and it's fast
+
+\section{Conclusion}
+
+\section{Future Work}
+
+
+
 
 
 \subsubsection{Code Samples}
@@ -113,8 +170,8 @@ The \code{search} construct is itself a statement and, as such, may be recursive
 \begin{lstlisting}[language=Rust, style=boxed]
 pub fn search<T>(
 	fcg: T,
-	reject: &mut FnMut(&[T], 
-	&T) -> bool, accept: &mut FnMut(&[T]) -> bool)
+	reject: &mut FnMut(&[T], &T) -> bool,
+	accept: &mut FnMut(&[T]) -> bool)
 where
     T: Iterator<Item = T>,
 {
@@ -146,131 +203,131 @@ where
 \section{Go Implementation}
 \begin{lstlisting}[language=Golang, style=boxed]
 // This is the one piece of internals that the userland
-	// can potentially see.
-	type __GraphNode struct {
-		Active	 bool
-		ID       int
-		Parent   int
-	}
-	// User CHILDREN declaration.
-	USER_children := func(node {UTYPE}, solution []{UTYPE}, gid *__GraphNode) <-chan {UTYPE} {
-		return make(chan {UTYPE}, 0)
-	}
-	// User ACCEPT declaration.
-	USER_accept := func(node {UTYPE}, solution []{UTYPE}, gid *__GraphNode) bool {
-		return false
-	}
-	// User REJECT declaration.
-	USER_reject := func(node {UTYPE}, solution []{UTYPE}, gid *__GraphNode) bool {
-		return false
-	}
-	root := changeme
-	maxgoroutine := 1
-	// Parent:Children PODO meant for stack management.
-	type StackEntry struct {
-		Parent   {UTYPE}
-		Children <-chan {UTYPE}
-	}
-	lock := make(chan int, maxgoroutine)
-	wg := make(chan int, maxgoroutine)
-	ticket := make(chan int, maxgoroutine)
-	// You have to declare first since the function can fire off a
-	// goroutine of itself.
-	var engine func(solution []{UTYPE}, root {UTYPE}, gid *__GraphNode)
-	engine = func(solution []{UTYPE}, root {UTYPE}, gid *__GraphNode) {
-		_children := USER_children(root, solution, gid)
-		// Stack of Parent:Chidren pairs.
-		stack := make([]StackEntry, 0)
-		// Current candidate under consideration.
-		var candidate {UTYPE}
-		// Holds a StackEntry.
-		var stackEntry StackEntry
-		// Generic boolean variable
-		var ok bool
-		for {
-			if candidate, ok = <-_children; !ok {
-				// This node has no further children.
-				if len(stack) == 0 {
-					// Algorithm termination. No further nodes in the stack.
-					break
-				}
-				// With no valid children left, we pop the latest node from the solution.
+// can potentially see.
+type __GraphNode struct {
+	Active	 bool
+	ID       int
+	Parent   int
+}
+// User CHILDREN declaration.
+USER_children := func(node {UTYPE}, solution []{UTYPE}, gid *__GraphNode) <-chan {UTYPE} {
+	return make(chan {UTYPE}, 0)
+}
+// User ACCEPT declaration.
+USER_accept := func(node {UTYPE}, solution []{UTYPE}, gid *__GraphNode) bool {
+	return false
+}
+// User REJECT declaration.
+USER_reject := func(node {UTYPE}, solution []{UTYPE}, gid *__GraphNode) bool {
+	return false
+}
+root := changeme
+maxgoroutine := 1
+// Parent:Children PODO meant for stack management.
+type StackEntry struct {
+	Parent   {UTYPE}
+	Children <-chan {UTYPE}
+}
+lock := make(chan int, maxgoroutine)
+wg := make(chan int, maxgoroutine)
+ticket := make(chan int, maxgoroutine)
+// You have to declare first since the function can fire off a
+// goroutine of itself.
+var engine func(solution []{UTYPE}, root {UTYPE}, gid *__GraphNode)
+engine = func(solution []{UTYPE}, root {UTYPE}, gid *__GraphNode) {
+	_children := USER_children(root, solution, gid)
+	// Stack of Parent:Chidren pairs.
+	stack := make([]StackEntry, 0)
+	// Current candidate under consideration.
+	var candidate {UTYPE}
+	// Holds a StackEntry.
+	var stackEntry StackEntry
+	// Generic boolean variable
+	var ok bool
+	for {
+		if candidate, ok = <-_children; !ok {
+			// This node has no further children.
+			if len(stack) == 0 {
+				// Algorithm termination. No further nodes in the stack.
+				break
+			}
+			// With no valid children left, we pop the latest node from the solution.
+			solution = solution[:len(solution)-1]
+			// Pop from the stack. Broken into two steps:
+			// 	1. Get final element.
+			//	2. Resize the stack.
+			stackEntry = stack[len(stack)-1]
+			stack = stack[:len(stack)-1]
+			// Extract root and candidate fields from the StackEntry.
+			root = stackEntry.Parent
+			_children = stackEntry.Children
+			continue
+		}
+		// Ask the user if we should reject this candidate.
+		_reject := USER_reject(candidate, solution, gid)
+		if _reject {
+			// Rejected candidate.
+			continue
+		}
+		// Append the candidate to the solution.
+		solution = append(solution, candidate)
+		// Ask the user if we should accept this solution.
+		_accept := USER_accept(candidate, solution, gid)
+		if _accept {
+			// Accepted solution.
+			// Pop from the solution thus far and continue on with the next child.
+			solution = solution[:len(solution)-1]
+			continue
+		}
+		select {
+			case lock <- 1:
+				wg <- 1
+				s := make([]{UTYPE}, len(solution))
+				copy(s, solution)
+				go engine(s, candidate, &__GraphNode{Active: true, ID: <-ticket, Parent: gid.ID})
+				// pretend we didn't see this
 				solution = solution[:len(solution)-1]
-				// Pop from the stack. Broken into two steps:
-				// 	1. Get final element.
-				//	2. Resize the stack.
-				stackEntry = stack[len(stack)-1]
-				stack = stack[:len(stack)-1]
-				// Extract root and candidate fields from the StackEntry.
-				root = stackEntry.Parent
-				_children = stackEntry.Children
 				continue
-			}
-			// Ask the user if we should reject this candidate.
-			_reject := USER_reject(candidate, solution, gid)
-			if _reject {
-				// Rejected candidate.
-				continue
-			}
-			// Append the candidate to the solution.
-			solution = append(solution, candidate)
-			// Ask the user if we should accept this solution.
-			_accept := USER_accept(candidate, solution, gid)
-			if _accept {
-				// Accepted solution.
-				// Pop from the solution thus far and continue on with the next child.
-				solution = solution[:len(solution)-1]
-				continue
-			}
-			select {
-				case lock <- 1:
-					wg <- 1
-					s := make([]{UTYPE}, len(solution))
-					copy(s, solution)
-					go engine(s, candidate, &__GraphNode{Active: true, ID: <-ticket, Parent: gid.ID})
-					// pretend we didn't see this
-					solution = solution[:len(solution)-1]
-					continue
-				default:
-			}
-			// Push the current root to the stack.
-			stack = append(stack, StackEntry{root, _children})
-			// Make the candidate the new root.
-			root = candidate
-			// Get the new root's children channel.
-			_children = USER_children(root, solution, gid)
+			default:
 		}
-		<- lock
-		wg <- -1
-		gid.Active = false
+		// Push the current root to the stack.
+		stack = append(stack, StackEntry{root, _children})
+		// Make the candidate the new root.
+		root = candidate
+		// Get the new root's children channel.
+		_children = USER_children(root, solution, gid)
 	}
-	shutdown := make(chan struct{}, 0)
-	go func() {
-		// Goroutine ticketing system.
-		id := 0
-		for {
-			select {
-			case ticket <- id:
-				id++
-			case <-shutdown:
-				close(ticket)
-				return
-			}
-		}
-	}()
-	lock <- 1
-	wg <- 1
-	go engine(make([]{UTYPE}, 0), root, &__GraphNode{Active: true, ID: <-ticket, Parent: 0})
-	count := 0
-	for c := range wg {
-		count += c
-		if count == 0 {
-			break
+	<- lock
+	wg <- -1
+	gid.Active = false
+}
+shutdown := make(chan struct{}, 0)
+go func() {
+	// Goroutine ticketing system.
+	id := 0
+	for {
+		select {
+		case ticket <- id:
+			id++
+		case <-shutdown:
+			close(ticket)
+			return
 		}
 	}
-	close(shutdown)
-	close(wg)
-	close(lock)
+}()
+lock <- 1
+wg <- 1
+go engine(make([]{UTYPE}, 0), root, &__GraphNode{Active: true, ID: <-ticket, Parent: 0})
+count := 0
+for c := range wg {
+	count += c
+	if count == 0 {
+		break
+	}
+}
+close(shutdown)
+close(wg)
+close(lock)
 \end{lstlisting}
 
 
